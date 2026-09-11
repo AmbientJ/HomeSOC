@@ -102,10 +102,6 @@ The dashboard displays information such as:
 
 
 
-Screenshots will be added here as the project documentation is finalized.
-
-
-
 \## How It Works
 
 
@@ -118,53 +114,53 @@ A HomeSOC scan follows roughly this process:
 
 Detect Local Network
 
-&#x20;       |
+       |
 
-&#x20;       v
+       v
 
 Discover Devices
 
-&#x20;  (ICMP + ARP)
+ (ICMP + ARP)
 
-&#x20;       |
+       |
 
-&#x20;       v
+       v
 
 Build Device Inventory
 
-&#x20;       |
+       |
 
-&#x20;       v
+       v
 
 Identify Devices
 
-&#x20;       |
+       |
 
-&#x20;       v
+       v
 
 Scan Selected Services
 
-&#x20;       |
+       |
 
-&#x20;       v
+       v
 
 Compare Against Baselines
 
-&#x20;       |
+       |
 
-&#x20;       v
+       v
 
 Generate Events / Alerts
 
-&#x20;       |
+       |
 
-&#x20;       v
+       v
 
 Store Results in SQLite
 
-&#x20;       |
+       |
 
-&#x20;       v
+       v
 
 Update Dashboard
 
