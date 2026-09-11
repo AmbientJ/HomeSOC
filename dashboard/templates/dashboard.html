@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HomeSOC</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="app-shell">
+
+<header class="topbar">
+    <div class="brand">
+        <div class="brand-mark">H</div>
+        <div>
+            <div class="brand-name">HomeSOC</div>
+            <div class="brand-subtitle">Home Security Operations Center</div>
+        </div>
+    </div>
+
+    <div class="monitor-controls">
+
+    <div
+        id="monitor-status"
+        class="monitor-status {% if not monitor_running %}monitor-stopped{% endif %}"
+    >
+        <span class="status-dot"></span>
+
+        <span id="monitor-status-text">
+            {% if monitor_stopping %}
+                STOPPING
+            {% elif monitor_running %}
+                MONITORING
+            {% else %}
+                STOPPED
+            {% endif %}
+        </span>
+    </div>
+
+    <button
+        id="start-monitor-button"
+        type="button"
+        class="monitor-button start-button"
+        {% if monitor_running %}disabled{% endif %}
+    >
+        Start
+    </button>
+
+    <button
+        id="stop-monitor-button"
+        type="button"
+        class="monitor-button stop-button"
+        {% if not monitor_running %}disabled{% endif %}
+    >
+        Stop
+    </button>
+
+</div>
+</header>
+
+<section
+    id="security-status"
+    class="security-status {% if not monitor_running %}security-stopped{% endif %}"
+>
+
+    <div id="security-icon" class="security-icon">
+        {% if monitor_running %}✓{% else %}■{% endif %}
+    </div>
+
+    <div class="security-copy">
+
+        <div class="security-label">
+            NETWORK STATUS
+        </div>
+
+        <div
+            id="security-title"
+            class="security-title"
+        >
+            {% if monitor_stopping %}
+                Network Monitoring Stopping
+            {% elif monitor_running %}
+                Network Monitoring Active
+            {% else %}
+                Network Monitoring Stopped
+            {% endif %}
+        </div>
+
+        <div
+            id="security-description"
+            class="security-description"
+        >
+            {% if monitor_running %}
+                HomeSOC is actively monitoring your network for device, service, and security changes.
+            {% else %}
+                HomeSOC monitoring is currently stopped. Press Start to resume network monitoring.
+            {% endif %}
+        </div>
+
+    </div>
+
+    <div class="scan-time">
+
+    <span id="scan-time-label">
+        LAST SCAN
+    </span>
+
+    <strong id="last-scan-value">
+        {{ last_scan }}
+    </strong>
+
+    <div
+        id="scan-progress-container"
+        class="scan-progress-container"
+        style="display: none;"
+    >
+        <div class="scan-progress-track">
+            <div
+                id="scan-progress-bar"
+                class="scan-progress-bar"
+            ></div>
+        </div>
+
+        <div class="scan-progress-details">
+            <span id="scan-progress-percent">
+                0%
+            </span>
+
+            <span id="scan-stage">
+                Starting scan...
+            </span>
+        </div>
+    </div>
+
+    <div
+        id="next-scan-countdown"
+        class="next-scan-countdown"
+        style="display: none;"
+    >
+        Next scan in
+        <strong id="countdown-value">
+            05:00
+        </strong>
+    </div>
+
+</div>
+
+</section>
+
+{% if active_network %}
+
+<section
+    class="network-info-panel"
+    data-network-id="{{ active_network['id'] }}"
+>
+    <div class="network-info-main">
+
+        <div class="network-info-label">
+            CURRENT NETWORK
+        </div>
+
+        <div class="network-info-name">
+            {{ active_network["display_name"] }}
+        </div>
+
+        <div class="network-info-details">
+
+	{% if active_network["ssid"] %}
+<span>
+    Wi-Fi: {{ active_network["ssid"] }}
+</span>
+{% endif %}
+
+            <span>
+                {{ active_network["network_cidr"] }}
+            </span>
+
+            <span>
+                Gateway:
+                {{ active_network["gateway_ip"] }}
+            </span>
+
+            <span>
+                Network ID:
+                {{ active_network["id"] }}
+            </span>
+
+        </div>
+
+    </div>
+
+    <form
+        class="network-rename-form"
+        method="POST"
+        action="{{ url_for(
+            'rename_network',
+            network_id=active_network['id']
+        ) }}"
+    >
+
+        <input
+            type="text"
+            name="display_name"
+            placeholder="Rename network"
+            value="{{ active_network['display_name'] }}"
+            maxlength="50"
+            required
+        >
+
+        <button type="submit">
+            Rename
+        </button>
+
+    </form>
+
+</section>
+
+{% endif %}
+
+<section class="stats-grid">
+
+    <div class="stat-card">
+        <div class="stat-label">ONLINE DEVICES</div>
+        <div id="online-device-count" class="stat-value green">
+            {{ online_devices }}
+        </div>
+        <div class="stat-description">Currently active</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-label">ACTIVE ALERTS</div>
+        <div id="active-alert-count" class="stat-value red">
+            {{ alerts|length }}
+        </div>
+        <div class="stat-description">Security findings</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-label">TOTAL DEVICES</div>
+        <div id="total-device-count" class="stat-value purple">
+            {{ total_devices }}
+        </div>
+        <div class="stat-description">Known devices</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-label">OFFLINE</div>
+        <div id="offline-device-count" class="stat-value gray">
+            {{ offline_devices }}
+        </div>
+        <div class="stat-description">Not currently detected</div>
+    </div>
+
+</section>
+
+<main class="content-grid">
+    <section class="panel" id="devices-panel">
+        <div class="panel-header"><div><h2>Devices</h2><p>Network device inventory</p></div><span
+    id="device-panel-count"
+    class="panel-count"
+>
+    {{ total_devices }}
+</span></div>
+        <div
+    id="device-list"
+    class="device-list"
+>
+        {% for device in devices %}
+            {% if device["mac"] %}
+            <a class="device-card" href="{{ url_for('device_detail', mac=device['mac']) }}">
+            {% else %}
+            <div class="device-card device-card-disabled">
+            {% endif %}
+
+                <div class="device-indicator {% if device['state'] == 'ONLINE' %}online-indicator{% elif device['state'] == 'OFFLINE' %}offline-indicator{% else %}observed-indicator{% endif %}"></div>
+
+                <div class="device-main">
+                    <div class="device-heading">
+                        <div class="device-heading-text">
+                            {% if device["friendly_name"] %}<div class="device-friendly-name">{{ device["friendly_name"] }}</div>{% endif %}
+                            <div class="device-ip">{{ device["ip"] }}</div>
+                        </div>
+                        <div class="device-status-column">
+                            <span class="device-trust {% if device['trust_status'] == 'TRUSTED' %}trust-trusted{% elif device['trust_status'] == 'SUSPICIOUS' %}trust-suspicious{% else %}trust-unreviewed{% endif %}">{{ device["trust_status"] or "UNREVIEWED" }}</span>
+                            <span class="device-state {% if device['state'] == 'ONLINE' %}state-online{% elif device['state'] == 'OFFLINE' %}state-offline{% else %}state-observed{% endif %}">{{ device["state"] }}</span>
+                        </div>
+                    </div>
+
+                    <div class="device-type">{% if device["device_type"] %}{{ device["device_type"]|replace("_", " ") }}{% else %}UNIDENTIFIED DEVICE{% endif %}{% if device["confidence"] %}<span class="device-confidence"> • {{ device["confidence"] }}</span>{% endif %}</div>
+
+                    <div class="device-meta-grid">
+                        {% if device["hostname"] %}<div class="device-meta"><span class="device-meta-label">HOSTNAME</span><span class="device-hostname">{{ device["hostname"] }}</span></div>{% endif %}
+                        {% if device["vendor"] %}<div class="device-meta"><span class="device-meta-label">VENDOR</span><span class="device-vendor">{{ device["vendor"] }}</span></div>{% endif %}
+                        <div class="device-meta"><span class="device-meta-label">MAC</span><span class="device-mac">{{ device["mac"] or "Unavailable" }}</span></div>
+                        <div class="device-meta"><span class="device-meta-label">LAST SEEN</span><span class="device-last-seen">{{ device["last_seen"] or "Never" }}</span></div>
+                    </div>
+
+                    {% if device["evidence"] %}<div class="device-evidence">{{ device["evidence"] }}</div>{% endif %}
+                    {% if device["friendly_name"] and device["notes"] %}<div class="device-notes">{{ device["notes"] }}</div>{% endif %}
+                    {% if device["mac"] %}<div class="device-open-hint">View device details →</div>{% endif %}
+                </div>
+
+            {% if device["mac"] %}</a>{% else %}</div>{% endif %}
+        {% endfor %}
+        </div>
+    </section>
+
+    <section
+    id="security-panel"
+    class="panel security-panel"
+>
+        <div class="panel-header"><div><h2>Security</h2><p>Active security findings</p></div><span
+    id="security-panel-count"
+    class="panel-count"
+>
+    {{ alerts|length }}
+</span></div>
+        <div
+    id="alert-list"
+    class="alert-list"
+>
+        {% if alerts %}
+            {% for alert in alerts %}
+            <div class="alert-row {% if alert['risk'] == 'CRITICAL' %}alert-critical{% elif alert['risk'] == 'HIGH' %}alert-high{% elif alert['risk'] == 'MEDIUM' %}alert-medium{% elif alert['risk'] == 'LOW' %}alert-low{% else %}alert-info{% endif %}">
+                <div class="alert-severity">{{ alert["risk"] }}</div>
+                <div class="alert-info"><div class="alert-service">{{ alert["service"] }}</div><div class="alert-target">{{ alert["ip"] }}:{{ alert["port"] }}</div><div class="alert-status">{{ alert["status"] }}</div></div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state"><div class="empty-icon">✓</div><div>No active security findings</div></div>
+        {% endif %}
+        </div>
+    </section>
+</main>
+
+<section
+    id="activity-panel"
+    class="panel activity-panel"
+>
+    <div class="panel-header"><div><h2>Recent Activity</h2><p>Latest HomeSOC events</p></div></div>
+    <div
+    id="activity-list"
+    class="activity-list"
+>
+    {% if events %}
+        {% for event in events %}
+        <div class="activity-row"><div class="activity-time">{{ event["timestamp"] }}</div><div class="activity-type">{{ event["event_type"] }}</div><div class="activity-target">{% if event["ip"] %}{{ event["ip"] }}{% endif %}{% if event["port"] %}:{{ event["port"] }}{% endif %}</div></div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">No recent activity</div>
+    {% endif %}
+    </div>
+</section>
+
+<footer class="footer">HomeSOC <span>•</span> Local Network Security Monitoring</footer>
+</div>
+<script>
+
+let nextScanTimestamp = null;
+
+
+// =====================================================
+// COUNTDOWN
+// =====================================================
+
+function updateCountdown() {
+
+    const countdownBox =
+        document.getElementById(
+            "next-scan-countdown"
+        );
+
+    const countdownValue =
+        document.getElementById(
+            "countdown-value"
+        );
+
+    if (!nextScanTimestamp) {
+
+        countdownBox.style.display = "none";
+
+        return;
+    }
+
+    const now = Date.now() / 1000;
+
+    let remaining = Math.max(
+        0,
+        Math.ceil(
+            nextScanTimestamp - now
+        )
+    );
+
+    const minutes = Math.floor(
+        remaining / 60
+    );
+
+    const seconds =
+        remaining % 60;
+
+    countdownValue.textContent =
+        String(minutes).padStart(2, "0")
+        + ":"
+        + String(seconds).padStart(2, "0");
+
+    countdownBox.style.display = "block";
+}
+
+
+// =====================================================
+// MONITOR STATUS
+// =====================================================
+
+async function updateMonitorStatus() {
+
+    try {
+
+        const response = await fetch(
+            "/monitor/status"
+        );
+
+        const data = await response.json();
+
+
+        const statusBox =
+            document.getElementById(
+                "monitor-status"
+            );
+
+        const statusText =
+            document.getElementById(
+                "monitor-status-text"
+            );
+
+        const securityBox =
+            document.getElementById(
+                "security-status"
+            );
+
+        const securityIcon =
+            document.getElementById(
+                "security-icon"
+            );
+
+        const securityTitle =
+            document.getElementById(
+                "security-title"
+            );
+
+        const securityDescription =
+            document.getElementById(
+                "security-description"
+            );
+
+        const startButton =
+            document.getElementById(
+                "start-monitor-button"
+            );
+
+        const stopButton =
+            document.getElementById(
+                "stop-monitor-button"
+            );
+
+        const progressContainer =
+            document.getElementById(
+                "scan-progress-container"
+            );
+
+        const progressBar =
+            document.getElementById(
+                "scan-progress-bar"
+            );
+
+        const progressPercent =
+            document.getElementById(
+                "scan-progress-percent"
+            );
+
+        const scanStage =
+            document.getElementById(
+                "scan-stage"
+            );
+
+        const countdownBox =
+            document.getElementById(
+                "next-scan-countdown"
+            );
+
+
+        // ---------------------------------------------
+        // SCANNING
+        // ---------------------------------------------
+
+        if (
+            data.state === "SCANNING"
+            || data.state === "STARTING"
+        ) {
+
+            statusText.textContent =
+                "SCANNING";
+
+            statusBox.classList.remove(
+                "monitor-stopped"
+            );
+
+            securityBox.classList.remove(
+                "security-stopped"
+            );
+
+            securityIcon.textContent = "↻";
+
+            securityTitle.textContent =
+                "Network Scan In Progress";
+
+            securityDescription.textContent =
+                data.stage;
+
+            startButton.disabled = true;
+            stopButton.disabled = false;
+
+            progressContainer.style.display =
+                "block";
+
+            countdownBox.style.display =
+                "none";
+
+            nextScanTimestamp = null;
+
+            const progress =
+                Number(data.progress) || 0;
+
+            progressBar.style.width =
+                progress + "%";
+
+            progressPercent.textContent =
+                progress + "%";
+
+            scanStage.textContent =
+                data.stage;
+        }
+
+
+        // ---------------------------------------------
+        // WAITING FOR NEXT SCAN
+        // ---------------------------------------------
+
+        else if (
+            data.state === "WAITING"
+        ) {
+
+            statusText.textContent =
+                "MONITORING";
+
+            statusBox.classList.remove(
+                "monitor-stopped"
+            );
+
+            securityBox.classList.remove(
+                "security-stopped"
+            );
+
+            securityIcon.textContent = "✓";
+
+            securityTitle.textContent =
+                "Network Monitoring Active";
+
+            securityDescription.textContent =
+                "Scan complete. HomeSOC is monitoring for the next scheduled scan.";
+
+            startButton.disabled = true;
+            stopButton.disabled = false;
+
+            progressContainer.style.display =
+                "none";
+
+            nextScanTimestamp =
+                data.next_scan_at;
+
+            updateCountdown();
+        }
+
+
+        // ---------------------------------------------
+        // STOPPING
+        // ---------------------------------------------
+
+        else if (
+            data.state === "STOPPING"
+        ) {
+
+            statusText.textContent =
+                "STOPPING";
+
+            securityTitle.textContent =
+                "Network Monitoring Stopping";
+
+            securityDescription.textContent =
+                "HomeSOC is finishing the current scan before monitoring stops.";
+
+            startButton.disabled = true;
+            stopButton.disabled = true;
+
+            nextScanTimestamp = null;
+
+            countdownBox.style.display =
+                "none";
+        }
+
+
+        // ---------------------------------------------
+        // ERROR
+        // ---------------------------------------------
+
+        else if (
+            data.state === "ERROR"
+        ) {
+
+            statusText.textContent =
+                "ERROR";
+
+            securityIcon.textContent = "!";
+
+            securityTitle.textContent =
+                "Scan Error";
+
+            securityDescription.textContent =
+                data.last_error
+                || "The latest HomeSOC scan failed.";
+
+            startButton.disabled = true;
+            stopButton.disabled = false;
+
+            progressContainer.style.display =
+                "none";
+
+            countdownBox.style.display =
+                "none";
+
+            nextScanTimestamp = null;
+        }
+
+
+        // ---------------------------------------------
+        // STOPPED
+        // ---------------------------------------------
+
+        else {
+
+            statusText.textContent =
+                "STOPPED";
+
+            statusBox.classList.add(
+                "monitor-stopped"
+            );
+
+            securityBox.classList.add(
+                "security-stopped"
+            );
+
+            securityIcon.textContent = "■";
+
+            securityTitle.textContent =
+                "Network Monitoring Stopped";
+
+            securityDescription.textContent =
+                "HomeSOC monitoring is currently stopped. Press Start to resume network monitoring.";
+
+            startButton.disabled = false;
+            stopButton.disabled = true;
+
+            progressContainer.style.display =
+                "none";
+
+            countdownBox.style.display =
+                "none";
+
+            nextScanTimestamp = null;
+        }
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Unable to retrieve HomeSOC monitor status",
+            error
+        );
+    }
+}
+
+
+// =====================================================
+// START MONITORING
+// =====================================================
+
+async function startMonitoring() {
+
+    const response = await fetch(
+        "/monitor/start",
+        {
+            method: "POST"
+        }
+    );
+
+    if (response.ok) {
+
+        await updateMonitorStatus();
+    }
+}
+
+
+// =====================================================
+// STOP MONITORING
+// =====================================================
+
+async function stopMonitoring() {
+
+    const response = await fetch(
+        "/monitor/stop",
+        {
+            method: "POST"
+        }
+    );
+
+    if (response.ok) {
+
+        await updateMonitorStatus();
+    }
+}
+
+
+// =====================================================
+// BUTTONS
+// =====================================================
+
+document
+    .getElementById(
+        "start-monitor-button"
+    )
+    .addEventListener(
+        "click",
+        startMonitoring
+    );
+
+
+document
+    .getElementById(
+        "stop-monitor-button"
+    )
+    .addEventListener(
+        "click",
+        stopMonitoring
+    );
+
+// =====================================================
+// DASHBOARD DATA
+// =====================================================
+
+function escapeHtml(value) {
+
+    if (
+        value === null
+        || value === undefined
+    ) {
+        return "";
+    }
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+async function updateDashboardData() {
+
+    try {
+
+        const response = await fetch(
+            "/dashboard/status"
+        );
+
+        if (!response.ok) {
+            return;
+        }
+
+        const data = await response.json();
+
+// =====================================================
+// CURRENT NETWORK
+// =====================================================
+
+const networkPanel =
+    document.querySelector(
+        ".network-info-panel"
+    );
+
+const activeNetworkId =
+    data.active_network
+        ? String(data.active_network.id)
+        : null;
+
+const displayedNetworkId =
+    networkPanel
+        ? networkPanel.dataset.networkId
+        : null;
+
+
+// Network was discovered after the page loaded,
+// or the computer moved to a different network.
+// Reload once so Flask can render the correct
+// network panel and rename form.
+if (
+    activeNetworkId
+    && (
+        !networkPanel
+        || displayedNetworkId
+            !== activeNetworkId
+    )
+) {
+    window.location.reload();
+    return;
+}
+
+        document.getElementById(
+            "online-device-count"
+        ).textContent =
+            data.online_devices;
+
+        document.getElementById(
+            "offline-device-count"
+        ).textContent =
+            data.offline_devices;
+
+        document.getElementById(
+            "total-device-count"
+        ).textContent =
+            data.total_devices;
+
+        document.getElementById(
+            "active-alert-count"
+        ).textContent =
+            data.alerts.length;
+
+        document.getElementById(
+            "last-scan-value"
+        ).textContent =
+            data.last_scan;
+
+// =====================================================
+// DEVICE LIST
+// =====================================================
+
+document.getElementById(
+    "device-panel-count"
+).textContent =
+    data.total_devices;
+
+const deviceList =
+    document.getElementById(
+        "device-list"
+    );
+
+let deviceHtml = "";
+
+for (const device of data.devices) {
+
+    const state =
+        device.state || "UNKNOWN";
+
+    let indicatorClass =
+        "observed-indicator";
+
+    let stateClass =
+        "state-observed";
+
+    if (state === "ONLINE") {
+
+        indicatorClass =
+            "online-indicator";
+
+        stateClass =
+            "state-online";
+    }
+
+    else if (state === "OFFLINE") {
+
+        indicatorClass =
+            "offline-indicator";
+
+        stateClass =
+            "state-offline";
+    }
+
+
+    const trust =
+        device.trust_status
+        || "UNREVIEWED";
+
+    let trustClass =
+        "trust-unreviewed";
+
+    if (trust === "TRUSTED") {
+
+        trustClass =
+            "trust-trusted";
+    }
+
+    else if (trust === "SUSPICIOUS") {
+
+        trustClass =
+            "trust-suspicious";
+    }
+
+
+    const deviceType =
+        device.device_type
+        ? device.device_type.replaceAll(
+            "_",
+            " "
+        )
+        : "UNIDENTIFIED DEVICE";
+
+
+    const confidence =
+        device.confidence
+        ? ` • ${escapeHtml(
+            device.confidence
+        )}`
+        : "";
+
+
+    const friendlyName =
+        device.friendly_name
+        ? `
+            <div class="device-friendly-name">
+                ${escapeHtml(
+                    device.friendly_name
+                )}
+            </div>
+        `
+        : "";
+
+
+    const hostname =
+        device.hostname
+        ? `
+            <div class="device-meta">
+                <span class="device-meta-label">
+                    HOSTNAME
+                </span>
+                <span class="device-hostname">
+                    ${escapeHtml(
+                        device.hostname
+                    )}
+                </span>
+            </div>
+        `
+        : "";
+
+
+    const vendor =
+        device.vendor
+        ? `
+            <div class="device-meta">
+                <span class="device-meta-label">
+                    VENDOR
+                </span>
+                <span class="device-vendor">
+                    ${escapeHtml(
+                        device.vendor
+                    )}
+                </span>
+            </div>
+        `
+        : "";
+
+
+    const evidence =
+        device.evidence
+        ? `
+            <div class="device-evidence">
+                ${escapeHtml(
+                    device.evidence
+                )}
+            </div>
+        `
+        : "";
+
+
+    const notes =
+        (
+            device.friendly_name
+            && device.notes
+        )
+        ? `
+            <div class="device-notes">
+                ${escapeHtml(
+                    device.notes
+                )}
+            </div>
+        `
+        : "";
+
+
+    const cardContents = `
+        <div class="device-indicator ${indicatorClass}">
+        </div>
+
+        <div class="device-main">
+
+            <div class="device-heading">
+
+                <div class="device-heading-text">
+
+                    ${friendlyName}
+
+                    <div class="device-ip">
+                        ${escapeHtml(
+                            device.ip
+                        )}
+                    </div>
+
+                </div>
+
+                <div class="device-status-column">
+
+                    <span
+                        class="device-trust ${trustClass}"
+                    >
+                        ${escapeHtml(
+                            trust
+                        )}
+                    </span>
+
+                    <span
+                        class="device-state ${stateClass}"
+                    >
+                        ${escapeHtml(
+                            state
+                        )}
+                    </span>
+
+                </div>
+
+            </div>
+
+            <div class="device-type">
+                ${escapeHtml(
+                    deviceType
+                )}
+                <span class="device-confidence">
+                    ${confidence}
+                </span>
+            </div>
+
+            <div class="device-meta-grid">
+
+                ${hostname}
+
+                ${vendor}
+
+                <div class="device-meta">
+                    <span class="device-meta-label">
+                        MAC
+                    </span>
+                    <span class="device-mac">
+                        ${escapeHtml(
+                            device.mac
+                            || "Unavailable"
+                        )}
+                    </span>
+                </div>
+
+                <div class="device-meta">
+                    <span class="device-meta-label">
+                        LAST SEEN
+                    </span>
+                    <span class="device-last-seen">
+                        ${escapeHtml(
+                            device.last_seen
+                            || "Never"
+                        )}
+                    </span>
+                </div>
+
+            </div>
+
+            ${evidence}
+
+            ${notes}
+
+            ${
+                device.mac
+                ? `
+                    <div class="device-open-hint">
+                        View device details →
+                    </div>
+                `
+                : ""
+            }
+
+        </div>
+    `;
+
+
+    if (device.mac) {
+
+        deviceHtml += `
+            <a
+                class="device-card"
+                href="/device/${encodeURIComponent(
+                    device.mac
+                )}"
+            >
+                ${cardContents}
+            </a>
+        `;
+    }
+
+    else {
+
+        deviceHtml += `
+            <div
+                class="device-card device-card-disabled"
+            >
+                ${cardContents}
+            </div>
+        `;
+    }
+}
+
+deviceList.innerHTML = deviceHtml;
+
+
+// =====================================================
+// SECURITY FINDINGS
+// =====================================================
+
+document.getElementById(
+    "security-panel-count"
+).textContent =
+    data.alerts.length;
+
+const alertList =
+    document.getElementById(
+        "alert-list"
+    );
+
+let alertHtml = "";
+
+if (data.alerts.length === 0) {
+
+    alertHtml = `
+        <div class="empty-state">
+            <div class="empty-icon">
+                ✓
+            </div>
+            <div>
+                No active security findings
+            </div>
+        </div>
+    `;
+}
+
+else {
+
+    for (const alert of data.alerts) {
+
+        const risk =
+            alert.risk || "INFO";
+
+        let riskClass =
+            "alert-info";
+
+        if (risk === "CRITICAL") {
+            riskClass = "alert-critical";
+        }
+
+        else if (risk === "HIGH") {
+            riskClass = "alert-high";
+        }
+
+        else if (risk === "MEDIUM") {
+            riskClass = "alert-medium";
+        }
+
+        else if (risk === "LOW") {
+            riskClass = "alert-low";
+        }
+
+
+        const target =
+            alert.port
+            ? `${alert.ip}:${alert.port}`
+            : alert.ip;
+
+
+        alertHtml += `
+            <div
+                class="alert-row ${riskClass}"
+            >
+
+                <div class="alert-severity">
+                    ${escapeHtml(
+                        risk
+                    )}
+                </div>
+
+                <div class="alert-info">
+
+                    <div class="alert-service">
+                        ${escapeHtml(
+                            alert.service
+                        )}
+                    </div>
+
+                    <div class="alert-target">
+                        ${escapeHtml(
+                            target
+                        )}
+                    </div>
+
+                    <div class="alert-status">
+                        ${escapeHtml(
+                            alert.status
+                        )}
+                    </div>
+
+                </div>
+
+            </div>
+        `;
+    }
+}
+
+alertList.innerHTML = alertHtml;
+
+
+// =====================================================
+// RECENT ACTIVITY
+// =====================================================
+
+const activityList =
+    document.getElementById(
+        "activity-list"
+    );
+
+let activityHtml = "";
+
+if (data.events.length === 0) {
+
+    activityHtml = `
+        <div class="empty-state">
+            No recent activity
+        </div>
+    `;
+}
+
+else {
+
+    for (const event of data.events) {
+
+        let target = "";
+
+        if (event.ip) {
+
+            target =
+                event.ip;
+        }
+
+        if (event.port) {
+
+            target +=
+                ":" + event.port;
+        }
+
+
+        activityHtml += `
+            <div class="activity-row">
+
+                <div class="activity-time">
+                    ${escapeHtml(
+                        event.timestamp
+                    )}
+                </div>
+
+                <div class="activity-type">
+                    ${escapeHtml(
+                        event.event_type
+                    )}
+                </div>
+
+                <div class="activity-target">
+                    ${escapeHtml(
+                        target
+                    )}
+                </div>
+
+            </div>
+        `;
+    }
+}
+
+activityList.innerHTML =
+    activityHtml;
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Unable to retrieve dashboard data",
+            error
+        );
+    }
+}
+
+
+// =====================================================
+// LIVE UPDATES
+// =====================================================
+
+updateMonitorStatus();
+updateDashboardData();
+
+setInterval(
+    updateMonitorStatus,
+    500
+);
+
+setInterval(
+    updateCountdown,
+    1000
+);
+
+setInterval(
+    updateDashboardData,
+    3000
+);
+
+</script>
+
+</body>
+</html>

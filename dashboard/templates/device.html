@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>
+        {{ device["friendly_name"] or device["ip"] }} | HomeSOC
+    </title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+<div class="app-shell">
+
+    <!-- HEADER -->
+
+    <header class="topbar">
+
+        <div class="brand">
+
+            <div class="brand-mark">
+                H
+            </div>
+
+            <div>
+
+                <div class="brand-name">
+                    HomeSOC
+                </div>
+
+                <div class="brand-subtitle">
+                    Device Management
+                </div>
+
+            </div>
+
+        </div>
+
+        <a class="back-link"
+           href="{{ url_for('dashboard') }}">
+            ← Back to Dashboard
+        </a>
+
+    </header>
+
+
+    <!-- DEVICE HEADER -->
+
+    <section class="device-detail-hero">
+
+        <div>
+
+            <div class="detail-eyebrow">
+                DEVICE
+            </div>
+
+            <h1 class="detail-title">
+
+                {% if device["friendly_name"] %}
+                    {{ device["friendly_name"] }}
+                {% else %}
+                    {{ device["ip"] }}
+                {% endif %}
+
+            </h1>
+
+            {% if device["friendly_name"] %}
+
+            <div class="detail-ip">
+                {{ device["ip"] }}
+            </div>
+
+            {% endif %}
+
+        </div>
+
+
+        <div class="detail-badges">
+
+            <div class="device-trust
+
+                {% if device['trust_status'] == 'TRUSTED' %}
+                    trust-trusted
+                {% elif device['trust_status'] == 'SUSPICIOUS' %}
+                    trust-suspicious
+                {% else %}
+                    trust-unreviewed
+                {% endif %}
+
+            ">
+                {{ device["trust_status"] }}
+            </div>
+
+
+            <div class="device-state
+
+                {% if device['state'] == 'ONLINE' %}
+                    state-online
+                {% elif device['state'] == 'OFFLINE' %}
+                    state-offline
+                {% else %}
+                    state-observed
+                {% endif %}
+
+            ">
+                {{ device["state"] }}
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- SUMMARY GRID -->
+
+    <section class="detail-grid">
+
+        <div class="detail-card">
+
+            <div class="detail-label">
+                MAC ADDRESS
+            </div>
+
+            <div class="detail-value mono">
+                {{ device["mac"] or "Unavailable" }}
+            </div>
+
+        </div>
+
+
+        <div class="detail-card">
+
+            <div class="detail-label">
+                VENDOR
+            </div>
+
+            <div class="detail-value">
+                {{ device["vendor"] or "Unknown" }}
+            </div>
+
+        </div>
+
+
+        <div class="detail-card">
+
+            <div class="detail-label">
+                HOSTNAME
+            </div>
+
+            <div class="detail-value">
+                {{ device["hostname"] or "Unknown" }}
+            </div>
+
+        </div>
+
+
+        <div class="detail-card">
+
+            <div class="detail-label">
+                DEVICE TYPE
+            </div>
+
+            <div class="detail-value">
+                {{ device["device_type"]|replace("_", " ") if device["device_type"] else "UNIDENTIFIED" }}
+            </div>
+
+        </div>
+
+
+        <div class="detail-card">
+
+            <div class="detail-label">
+                CONFIDENCE
+            </div>
+
+            <div class="detail-value">
+                {{ device["confidence"] or "Unknown" }}
+            </div>
+
+        </div>
+
+
+        <div class="detail-card">
+
+            <div class="detail-label">
+                FIRST SEEN
+            </div>
+
+            <div class="detail-value mono">
+                {{ device["first_seen"] or "Unknown" }}
+            </div>
+
+        </div>
+
+
+        <div class="detail-card">
+
+            <div class="detail-label">
+                LAST SEEN
+            </div>
+
+            <div class="detail-value mono">
+                {{ device["last_seen"] or "Unknown" }}
+            </div>
+
+        </div>
+
+
+        <div class="detail-card">
+
+            <div class="detail-label">
+                IP ADDRESS
+            </div>
+
+            <div class="detail-value mono">
+                {{ device["ip"] }}
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- MANAGEMENT -->
+
+    <section class="panel detail-panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2>
+                    Device Management
+                </h2>
+
+                <p>
+                    Add a friendly name, trust status, and operator notes
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <form method="POST"
+              class="device-form">
+
+            <div class="form-group">
+
+                <label for="friendly_name">
+                    Friendly Name
+                </label>
+
+                <input
+                    type="text"
+                    id="friendly_name"
+                    name="friendly_name"
+                    value="{{ device['friendly_name'] }}"
+                    placeholder="Example: Living Room Roku"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="trust_status">
+                    Trust Status
+                </label>
+
+                <select
+                    id="trust_status"
+                    name="trust_status"
+                >
+
+                    <option
+                        value="UNREVIEWED"
+                        {% if device["trust_status"] == "UNREVIEWED" %}
+                            selected
+                        {% endif %}
+                    >
+                        UNREVIEWED
+                    </option>
+
+                    <option
+                        value="TRUSTED"
+                        {% if device["trust_status"] == "TRUSTED" %}
+                            selected
+                        {% endif %}
+                    >
+                        TRUSTED
+                    </option>
+
+                    <option
+                        value="SUSPICIOUS"
+                        {% if device["trust_status"] == "SUSPICIOUS" %}
+                            selected
+                        {% endif %}
+                    >
+                        SUSPICIOUS
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group form-group-wide">
+
+                <label for="notes">
+                    Notes
+                </label>
+
+                <textarea
+                    id="notes"
+                    name="notes"
+                    rows="4"
+                    placeholder="Optional notes about this device"
+                >{{ device["notes"] }}</textarea>
+
+            </div>
+
+
+            <div class="form-actions">
+
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    Save Device
+                </button>
+
+            </div>
+
+        </form>
+
+    </section>
+
+
+    <!-- IDENTIFICATION EVIDENCE -->
+
+    <section class="panel detail-panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2>
+                    Identification Evidence
+                </h2>
+
+                <p>
+                    Signals used by HomeSOC to classify this device
+                </p>
+
+            </div>
+
+        </div>
+
+        <div class="detail-content">
+
+            {% if device["evidence"] %}
+
+                <div class="evidence-box">
+                    {{ device["evidence"] }}
+                </div>
+
+            {% else %}
+
+                <div class="empty-state">
+                    No identification evidence available
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+
+    <!-- SERVICES -->
+
+    <section class="panel detail-panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2>
+                    Services
+                </h2>
+
+                <p>
+                    Monitored TCP services for this device
+                </p>
+
+            </div>
+
+            <span class="panel-count">
+                {{ services|length }}
+            </span>
+
+        </div>
+
+        <div class="service-table">
+
+            {% if services %}
+
+                {% for service in services %}
+
+                <div class="service-detail-row">
+
+                    <div class="service-port">
+                        {{ service["port"] }}/{{ service["protocol"] }}
+                    </div>
+
+                    <div class="service-state
+
+                        {% if service['state'] == 'OPEN' %}
+                            service-open
+                        {% else %}
+                            service-closed
+                        {% endif %}
+
+                    ">
+                        {{ service["state"] }}
+                    </div>
+
+                    <div class="service-seen">
+                        Last seen:
+                        {{ service["last_seen"] or "Unknown" }}
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="empty-state">
+                    No monitored services recorded
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+
+    <!-- ALERTS -->
+
+    <section class="panel detail-panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2>
+                    Security History
+                </h2>
+
+                <p>
+                    Security findings associated with this device
+                </p>
+
+            </div>
+
+            <span class="panel-count">
+                {{ alerts|length }}
+            </span>
+
+        </div>
+
+        <div class="detail-list">
+
+            {% if alerts %}
+
+                {% for alert in alerts %}
+
+                <div class="detail-history-row">
+
+                    <div class="history-time">
+                        {{ alert["timestamp"] }}
+                    </div>
+
+                    <div class="history-main">
+
+                        <div class="history-title">
+                            {{ alert["service"] }}
+                            {% if alert["port"] %}
+                                / {{ alert["port"] }}
+                            {% endif %}
+                        </div>
+
+                        <div class="history-description">
+                            {{ alert["description"] }}
+                        </div>
+
+                    </div>
+
+                    <div class="history-status">
+                        {{ alert["risk"] }} • {{ alert["status"] }}
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="empty-state">
+                    No security findings recorded
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+
+    <!-- EVENTS -->
+
+    <section class="panel detail-panel">
+
+        <div class="panel-header">
+
+            <div>
+
+                <h2>
+                    Device Activity
+                </h2>
+
+                <p>
+                    Recent events associated with this device
+                </p>
+
+            </div>
+
+            <span class="panel-count">
+                {{ events|length }}
+            </span>
+
+        </div>
+
+        <div class="detail-list">
+
+            {% if events %}
+
+                {% for event in events %}
+
+                <div class="detail-history-row">
+
+                    <div class="history-time">
+                        {{ event["timestamp"] }}
+                    </div>
+
+                    <div class="history-main">
+
+                        <div class="history-title">
+                            {{ event["event_type"] }}
+                        </div>
+
+                        <div class="history-description">
+                            {{ event["description"] or "" }}
+                        </div>
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            {% else %}
+
+                <div class="empty-state">
+                    No device events recorded
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+
+    <!-- FOOTER -->
+
+    <footer class="footer">
+
+        HomeSOC
+        <span>•</span>
+        Device Security Management
+
+    </footer>
+
+</div>
+
+</body>
+
+</html>
