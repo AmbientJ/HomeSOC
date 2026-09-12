@@ -1,116 +1,99 @@
-\# HomeSOC
 
-
-
+HomeSOC
 HomeSOC is a Windows-based network monitoring and security project I built to get hands-on experience with network discovery, asset monitoring, service scanning, security alerts, and persistent device tracking.
-
-
 
 The project started as a simple way to see what devices were connected to my home network. As I continued working on it, I expanded it into a small home Security Operations Center (SOC) that can continuously monitor a local network, identify devices, track changes, detect exposed services, and display everything through a live dashboard.
 
-
-
 One of my main goals was to build something that worked with a real network instead of relying entirely on a simulated lab. I also wanted the program to be portable enough to recognize and monitor different local networks rather than being hardcoded for one environment.
 
-
-
-\## What HomeSOC Does
-
-
-
+What HomeSOC Does
 HomeSOC continuously scans the local network and builds a persistent inventory of the devices it observes.
-
-
 
 It can:
 
+Automatically determine the local subnet and default gateway
 
+Discover devices using ICMP and ARP information
 
-\* Automatically determine the local subnet and default gateway
+Track devices by MAC address even when their IP address changes
 
-\* Discover devices using ICMP and ARP information
+Identify hostnames and hardware vendors when available
 
-\* Track devices by MAC address even when their IP address changes
+Perform basic device classification using network evidence
 
-\* Identify hostnames and hardware vendors when available
+Scan selected TCP services
 
-\* Perform basic device classification using network evidence
+Establish service baselines for known devices
 
-\* Scan selected TCP services
+Detect unexpected service changes
 
-\* Establish service baselines for known devices
+Track devices going online and offline
 
-\* Detect unexpected service changes
+Generate and manage security alerts
 
-\* Track devices going online and offline
+Mark devices as Trusted, Suspicious, or Unreviewed
 
-\* Generate and manage security alerts
+Store network and device history in SQLite
 
-\* Mark devices as Trusted, Suspicious, or Unreviewed
+Recognize previously monitored networks
 
-\* Store network and device history in SQLite
+Detect the current Wi-Fi SSID on Windows
 
-\* Recognize previously monitored networks
+Allow networks to be given custom names
 
-\* Detect the current Wi-Fi SSID on Windows
+Run scans automatically in the background
 
-\* Allow networks to be given custom names
+Display live scan progress and monitoring status
 
-\* Run scans automatically in the background
+Provide a browser-based security dashboard
 
-\* Display live scan progress and monitoring status
-
-\* Provide a browser-based security dashboard
-
-
-
-\## Dashboard
-
-
-
+Dashboard
 HomeSOC includes a Flask dashboard that provides a quick view of the current network and monitoring state.
-
-
 
 The dashboard displays information such as:
 
+Current network
+
+Wi-Fi SSID
+
+Online and offline device counts
+
+Device inventory
+
+Device type and identification confidence
+
+Hostname and vendor information
+
+Trust status
+
+Active security alerts
+
+Recent activity
+
+Last completed scan
+
+Current scan progress
+
+Time until the next scan
+
+Dashboard Overview
 
 
-\* Current network
-
-\* Wi-Fi SSID
-
-\* Online and offline device counts
-
-\* Device inventory
-
-\* Device type and identification confidence
-
-\* Hostname and vendor information
-
-\* Trust status
-
-\* Active security alerts
-
-\* Recent activity
-
-\* Last completed scan
-
-\* Current scan progress
-
-\* Time until the next scan
+Device Inventory and Security Activity
 
 
-
-\## How It Works
-
+Device Management
 
 
+Identification Evidence and Service Monitoring
+
+
+Device Activity and Security History
+
+
+How It Works
 A HomeSOC scan follows roughly this process:
 
-
-
-```text
 
 Detect Local Network
 
@@ -164,27 +147,13 @@ Store Results in SQLite
 
 Update Dashboard
 
-```
-
-
-
 The monitoring service repeats this process in the background while the dashboard remains available.
-
-
 
 HomeSOC also stores information about previously monitored networks. A combination of subnet and gateway information is used to distinguish networks, while the Wi-Fi SSID is stored as additional context.
 
-
-
 This allows the same installation to maintain separate device histories when used on different networks.
 
-
-
-\## Project Structure
-
-
-
-```text
+Project Structure
 
 HomeSOC/
 
@@ -220,7 +189,7 @@ HomeSOC/
 
 |-- identification/
 
-|   |-- device\_id.py
+|   |-- device_id.py
 
 |   `-- vendor.py
 
@@ -246,11 +215,11 @@ HomeSOC/
 
 |-- config.py
 
-|-- create\_baseline.py
+|-- create_baseline.py
 
-|-- dashboard\_server.py
+|-- dashboard_server.py
 
-|-- homesoc\_app.py
+|-- homesoc_app.py
 
 |-- logger.py
 
@@ -260,253 +229,135 @@ HomeSOC/
 
 `-- requirements.txt
 
-```
-
-
-
-\## Running HomeSOC
-
-
-
+Running HomeSOC
 HomeSOC V1 is designed primarily for Windows.
 
+Requirements
+Python 3
 
+Windows
 
-\### Requirements
-
-
-
-\* Python 3
-
-\* Windows
-
-\* A local network you are authorized to monitor
-
-
+A local network you are authorized to monitor
 
 Install the Python dependencies:
 
 
-
-```powershell
-
 pip install -r requirements.txt
-
-```
-
-
 
 Then start HomeSOC:
 
 
-
-```powershell
-
-python homesoc\_app.py
-
-```
-
-
+python homesoc_app.py
 
 HomeSOC starts the local dashboard and monitoring application. The dashboard runs locally rather than being hosted on the public internet.
 
-
-
-\## Windows Build
-
-
-
+Windows Build
 I also packaged HomeSOC as a standalone Windows application using PyInstaller.
-
-
 
 The packaged version allows HomeSOC to run without launching the project manually from a Python terminal and suppresses the command windows normally created by Windows networking utilities during scans.
 
-
-
 The Windows build uses the same monitoring and dashboard components as the source version.
 
+Technologies Used
+Python — main application and monitoring logic
 
+Flask — local web dashboard
 
-\## Technologies Used
+SQLite — persistent network, device, service, event, and alert data
 
+psutil — local network interface information
 
+ipaddress — subnet calculation and validation
 
-\*\*Python\*\* — main application and monitoring logic
+ThreadPoolExecutor — concurrent network discovery
 
+Windows networking utilities — ARP, routing, ICMP, and Wi-Fi information
 
+PyInstaller — Windows application packaging
 
-\*\*Flask\*\* — local web dashboard
+HTML / CSS / JavaScript — dashboard interface and live updates
 
-
-
-\*\*SQLite\*\* — persistent network, device, service, event, and alert data
-
-
-
-\*\*psutil\*\* — local network interface information
-
-
-
-\*\*ipaddress\*\* — subnet calculation and validation
-
-
-
-\*\*ThreadPoolExecutor\*\* — concurrent network discovery
-
-
-
-\*\*Windows networking utilities\*\* — ARP, routing, ICMP, and Wi-Fi information
-
-
-
-\*\*PyInstaller\*\* — Windows application packaging
-
-
-
-\*\*HTML / CSS / JavaScript\*\* — dashboard interface and live updates
-
-
-
-\## Some of the Problems I Worked Through
-
-
-
+Some of the Problems I Worked Through
 A large part of this project was figuring out how network behavior differs from what looks correct on paper.
 
-
-
-For example, Windows `ping` behavior initially caused HomeSOC to report devices that were not actually responding. I changed discovery logic to validate actual TTL responses instead of relying only on the process exit code.
-
-
+For example, Windows ping behavior initially caused HomeSOC to report devices that were not actually responding. I changed discovery logic to validate actual TTL responses instead of relying only on the process exit code.
 
 I also had to account for devices that do not respond to ICMP but still appear in the ARP table, devices that temporarily stop responding, changing IP addresses, locally administered MAC addresses, and services that disappear for only a single scan.
 
-
-
 As the project grew, I added persistent device identities, service baselines, retry thresholds, alert lifecycle handling, background monitoring, multi-network tracking, and live dashboard updates.
-
-
 
 Packaging the application introduced another set of problems, including application data paths, fresh database creation, hidden imports, dashboard resources, and preventing Windows networking commands from opening console windows.
 
-
-
 Working through those issues ended up being one of the most useful parts of building HomeSOC.
 
-
-
-\## Device Identification
-
-
-
+Device Identification
 HomeSOC intentionally takes a conservative approach to device identification.
-
-
 
 A device is classified using evidence such as:
 
+MAC vendor
 
+Hostname
 
-\* MAC vendor
+Open services
 
-\* Hostname
+Gateway status
 
-\* Open services
+Local host information
 
-\* Gateway status
-
-\* Local host information
-
-\* Previously observed identity information
-
-
+Previously observed identity information
 
 When there is not enough evidence to confidently identify a device, HomeSOC leaves it unidentified rather than forcing a potentially incorrect classification.
 
-
-
-\## Limitations
-
-
-
+Limitations
 HomeSOC is a learning and portfolio project, not a replacement for an enterprise IDS, SIEM, EDR platform, or commercial network monitoring system.
-
-
 
 Some current limitations include:
 
+Primarily designed for Windows
 
+ICMP-based discovery can miss devices that block ping requests
 
-\* Primarily designed for Windows
+ARP information is limited to devices visible from the local network
 
-\* ICMP-based discovery can miss devices that block ping requests
+Device classification is heuristic and may not always be accurate
 
-\* ARP information is limited to devices visible from the local network
+Vendor information depends on MAC address availability
 
-\* Device classification is heuristic and may not always be accurate
+Service scanning checks a selected group of ports rather than every possible service
 
-\* Vendor information depends on MAC address availability
+Network isolation and certain router configurations can limit device visibility
 
-\* Service scanning checks a selected group of ports rather than every possible service
+These limitations are intentionally documented rather than hidden because understanding what a monitoring system cannot see is just as important as understanding what it can.
 
-\* Network isolation and certain router configurations can limit device visibility
-
-
-
-These limitations are intentionally documented rather than hidden because understanding what a monitoring system \*\*cannot\*\* see is just as important as understanding what it can.
-
-
-
-\## Security and Responsible Use
-
-
-
+Security and Responsible Use
 HomeSOC is intended for monitoring networks that you own or have explicit authorization to analyze.
-
-
 
 Network discovery and service scanning should not be performed against systems or networks without permission.
 
-
-
 The repository intentionally does not include my local HomeSOC database, scan logs, network inventory, or other information collected from monitored networks.
 
-
-
-\## Future Ideas
-
-
-
+Future Ideas
 V1 is intentionally feature-frozen so I can treat it as a completed project rather than continuously adding features.
-
-
 
 Possible future versions could explore:
 
+Additional discovery methods
 
+Improved device fingerprinting
 
-\* Additional discovery methods
+Expanded network-specific event history
 
-\* Improved device fingerprinting
+More detailed service analysis
 
-\* Expanded network-specific event history
+Historical network statistics
 
-\* More detailed service analysis
+Dashboard charts and trends
 
-\* Historical network statistics
+Additional alerting options
 
-\* Dashboard charts and trends
+Linux support
 
-\* Additional alerting options
-
-\* Linux support
-
-\* Remote monitoring nodes
-
-
+Remote monitoring nodes
 
 For now, HomeSOC V1 represents the original goal: build a working network security monitoring system from the ground up, run it against a real environment, and learn from the problems that came with making it actually work.
-
-
-
