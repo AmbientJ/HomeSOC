@@ -76,19 +76,25 @@ Current scan progress
 
 Time until the next scan
 
-Dashboard Overview
+### Dashboard Overview
 
+![HomeSOC Dashboard](docs/Dashboard.png)
 
-Device Inventory and Security Activity
+### Device Inventory and Security Activity
 
+![HomeSOC Dashboard Lower](docs/Dashboard%20Lower.png)
 
-Device Management
+### Device Management
 
+![HomeSOC Device Management](docs/Device%20Management.png)
 
-Identification Evidence and Service Monitoring
+### Identification Evidence and Service Monitoring
 
+![HomeSOC Identification Evidence](docs/Identification%20Evidence.png)
 
-Device Activity and Security History
+### Device Activity and Security History
+
+![HomeSOC Device Activity](docs/Device%20Activity.png)
 
 
 How It Works
